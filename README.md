@@ -88,6 +88,46 @@ GET /screenshot
 - Implements [puppeteer-cluster](https://github.com/thomasdondorf/puppeteer-cluster) for concurrent processing
 - Input validation using [Zod](https://zod.dev/)
 
+## Docker Usage
+
+### Building the Image
+
+```bash
+docker build -t screenshot-service .
+```
+
+### Running the Container
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -e AUTH_TOKEN=your-secret-token \
+  -e HOST_WHITELIST=example.com,test.com \
+  -e MAX_CONCURRENCY=10 \
+  screenshot-service
+```
+
+### Environment Variables
+
+All environment variables can be passed to the container using the `-e` flag or by using a `.env` file:
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  --env-file .env \
+  screenshot-service
+```
+
+### Docker Compose
+
+For local development, you can use the provided `docker-compose.yml`:
+
+```bash
+docker-compose up -d
+```
+
+This will start the service with the configuration specified in your `.env` file.
+
 ## Example Usage
 
 ```bash

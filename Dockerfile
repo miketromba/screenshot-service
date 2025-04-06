@@ -1,67 +1,33 @@
-# Using a dockerfile because digitalocean's default buildpack shits itself when
-# it sees the monorepo and workspace:*-style imports
+# Use Node.js 20 as the base image
+FROM node:20-slim
 
-FROM node:20-alpine AS base
+# Install required dependencies for Puppeteer
+RUN apt-get update \
+    && apt-get install -y chromium fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+      --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@10.5.1 --activate
 
-FROM base AS builder
-RUN apk update && \
-    apk add --no-cache libc6-compat && \
-    npm install -g pnpm turbo
-
+# Create app directory
 WORKDIR /app
 
-# Copy the app files first
-COPY . ./apps/screenshot-service/
-
-# Create minimal workspace setup
-RUN echo '{"name":"root","private":true,"packageManager":"pnpm@10.7.1"}' > package.json && \
-    echo '{"packages":["apps/*","packages/*"]}' > pnpm-workspace.yaml && \
-    echo '{"$schema":"https://turbo.build/schema.json","pipeline":{}}' > turbo.json
-
-# Generate pruned lockfile and workspace
-RUN turbo prune @repo/screenshot-service --docker
-
-FROM base AS installer
-RUN apk update && \
-    apk add --no-cache libc6-compat && \
-    npm install -g pnpm
-
-WORKDIR /app
-
-# Copy pruned workspace
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-
-# Copy source files
-COPY --from=builder /app/out/full/ .
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 
-# Build the project
-RUN pnpm turbo build --filter=@repo/screenshot-service...
+# Copy source code
+COPY . .
 
-FROM base AS runner
-RUN apk add --no-cache libc6-compat chromium && \
-    npm install -g tsx
+# Set environment variables for Puppeteer
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# Expose the port the app runs on
+EXPOSE 3000
 
-WORKDIR /app
-
-# Don't run production as root
-RUN addgroup --system --gid 1001 screenshot-service && \
-    adduser --system --uid 1001 screenshot-service
-USER screenshot-service
-
-# Copy built application
-COPY --from=installer /app .
-
-CMD ["tsx", "apps/screenshot-service/src/server.ts"]
-
-EXPOSE 80
-EXPOSE 3006
+# Start the application directly with tsx
+CMD ["pnpm", "exec", "tsx", "src/server.ts"]

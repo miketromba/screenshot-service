@@ -13,6 +13,8 @@ const MAX_CONCURRENCY = process.env.MAX_CONCURRENCY
 const HOST_WHITELIST =
 	process.env.HOST_WHITELIST?.split(',').map(h => h.trim()) || []
 const AUTH_TOKEN = process.env.AUTH_TOKEN
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
+const DEV_MODE = process.env.NODE_ENV === 'development'
 
 type PuppeteerOptions = Parameters<typeof puppeteer.launch>[0]
 
@@ -24,7 +26,8 @@ async function getCluster() {
 			concurrency: Cluster.CONCURRENCY_CONTEXT,
 			maxConcurrency: MAX_CONCURRENCY,
 			puppeteerOptions: {
-				headless: true
+				headless: true,
+				args: ['--no-sandbox', '--disable-setuid-sandbox']
 			} as PuppeteerOptions
 		})
 	}
@@ -75,12 +78,11 @@ async function takeScreenshot(opts: {
 	})
 }
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3006
 const app = new Hono()
 
 // Add common middleware
 // Only use logger middleware in development environment
-if (process.env.NODE_ENV === 'development') {
+if (DEV_MODE) {
 	app.use('*', logger())
 }
 
@@ -92,7 +94,6 @@ const auth = async (c: any, next: any) => {
 	if (c.req.path === '/') {
 		return next()
 	}
-
 	const authHeader = c.req.header('Authorization')
 	if (!authHeader || !authHeader.startsWith('Bearer ')) {
 		return c.json(
@@ -100,16 +101,16 @@ const auth = async (c: any, next: any) => {
 			401
 		)
 	}
-
 	const token = authHeader.split(' ')[1]
-	if (!process.env.AUTH_TOKEN || token !== process.env.AUTH_TOKEN) {
+	if (token !== AUTH_TOKEN) {
 		return c.json({ error: 'Invalid token' }, 403)
 	}
-
 	return next()
 }
 
-app.use('*', auth)
+if (AUTH_TOKEN) {
+	app.use('*', auth)
+}
 
 app.get('/', c => {
 	return c.json({ online: true })

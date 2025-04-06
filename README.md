@@ -15,6 +15,7 @@ The Screenshot Service is a Node.js server built with Hono that provides an API 
 - Full page or viewport screenshots
 - Concurrent request handling (up to 10 simultaneous screenshots)
 - Bearer token authentication for secure access
+- Hostname whitelist validation for enhanced security
 
 ## Authentication
 
@@ -69,11 +70,16 @@ GET /screenshot
 - Content-Type: image/[type]
 - Body: Binary image data
 
+**Error Responses:**
+- `403 Forbidden`: If the URL's hostname is not in the allowed whitelist
+
 ## Environment Variables
 
-- `PORT`: Server port number (default: 3006)
+- `PORT`: Server port number (default: 3000)
 - `NODE_ENV`: Environment setting ("development" enables request logging)
 - `AUTH_TOKEN`: Required. The bearer token that clients must provide to access protected endpoints
+- `MAX_CONCURRENCY`: Maximum number of concurrent screenshot operations (default: 10)
+- `HOST_WHITELIST`: Comma-separated list of allowed hostnames. If empty, all hostnames are allowed
 
 ## Technical Details
 

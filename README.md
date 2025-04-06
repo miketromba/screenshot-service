@@ -1,6 +1,10 @@
 # Screenshot Service
 
-This is a server that runs a nodejs runtime and generates project file screenshots just-in-time
+A high-performance Node.js service that generates web page screenshots on-demand using Puppeteer. Built with Hono and featuring concurrent processing, authentication, and hostname whitelisting for secure, scalable screenshot generation.
+
+[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## Overview
 

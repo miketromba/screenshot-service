@@ -21,15 +21,46 @@ The Screenshot Service is a Node.js server built with Hono that provides an API 
 - Bearer token authentication for secure access
 - Hostname whitelist validation for enhanced security
 
+## Use Cases
+
+### Internal Application Screenshots
+The service is particularly useful for capturing screenshots of authenticated internal applications. For example, in a design tool where previews are protected behind authentication:
+
+1. Set up your internal application with authentication
+2. Configure the screenshot service with the same authentication token
+3. Use the service to capture authenticated views of your application
+
+Example scenario:
+```bash
+# Your design tool has protected preview URLs like:
+# https://design-tool.internal/preview/design-123
+# These URLs require authentication to access
+
+# Configure the screenshot service with your auth token
+export AUTH_TOKEN=your-internal-auth-token
+
+# The service will now be able to access and capture these protected previews
+curl -H "Authorization: Bearer $AUTH_TOKEN" \
+  "http://localhost:3000/screenshot?url=https://design-tool.internal/preview/design-123" \
+  > design-preview.png
+```
+
+This setup ensures that:
+- Your internal application remains secure
+- Only the screenshot service can access protected previews
+- You can programmatically capture authenticated views of your application
+
 ## Authentication
 
-All endpoints except the health check (`GET /`) require authentication using a Bearer token. The token must be included in the `Authorization` header of each request.
+Authentication is optional and can be enabled by setting the `AUTH_TOKEN` environment variable. When enabled, all endpoints except the health check (`GET /`) require authentication using a Bearer token. The token must be included in the `Authorization` header of each request.
 
 Format: `Authorization: Bearer <your-token>`
 
-If the token is missing or invalid, the server will respond with:
+If authentication is enabled and the token is missing or invalid, the server will respond with:
 - `401 Unauthorized`: Missing or invalid Authorization header format
 - `403 Forbidden`: Invalid token
+
+Note: When AUTH_TOKEN is set, it is also used to authenticate requests to the target websites when taking screenshots. This means the service will forward your authentication token to the websites you're capturing.
 
 ## API Endpoints
 
@@ -81,7 +112,9 @@ GET /screenshot
 
 - `PORT`: Server port number (default: 3000)
 - `NODE_ENV`: Environment setting ("development" enables request logging)
-- `AUTH_TOKEN`: Required. The bearer token that clients must provide to access protected endpoints
+- `AUTH_TOKEN`: Optional. When set, used for two purposes:
+  1. The bearer token that clients must provide to access protected endpoints
+  2. The authorization token forwarded to target websites when taking screenshots
 - `MAX_CONCURRENCY`: Maximum number of concurrent screenshot operations (default: 10)
 - `HOST_WHITELIST`: Comma-separated list of allowed hostnames. If empty, all hostnames are allowed
 

@@ -129,7 +129,13 @@ GET /screenshot
 
 ### Building the Image
 
+You can build the Docker image using either the npm script or directly with Docker:
+
 ```bash
+# Using npm script (builds with tag: screenshot-service)
+npm run docker:build
+
+# Or directly with Docker
 docker build -t screenshot-service .
 ```
 

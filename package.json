@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "tsx watch --env-file=.env src/server.ts",
         "start": "tsx --env-file=.env src/server.ts",
-        "lint": "eslint ."
+        "lint": "eslint .",
+        "docker:build": "docker build -t screenshot-service ."
     },
     "dependencies": {
         "@hono/node-server": "^1.14.0",

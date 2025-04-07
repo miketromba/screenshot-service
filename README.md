@@ -165,6 +165,19 @@ docker-compose up -d
 
 This will start the service with the configuration specified in your `.env` file.
 
+### Accessing Local Services from Docker
+
+When running the screenshot service in Docker and you need to capture screenshots of services running on your local machine, use `host.docker.internal` instead of `localhost` in your URLs. This is because `localhost` inside the container refers to the container itself, not your host machine.
+
+Example:
+```bash
+# ❌ Instead of:
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://localhost:3001/my-app"
+
+# ✅ Use:
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://host.docker.internal:3001/my-app"
+```
+
 ## Example Usage
 
 ```bash

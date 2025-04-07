@@ -132,6 +132,9 @@ app.get(
 	async c => {
 		const { url } = c.req.valid('query')
 
+		// Prod logging
+		if (!DEV_MODE) console.log('CAPTURE:', url)
+
 		// Check if the URL's hostname is allowed
 		if (!isUrlHostnameAllowed(url)) {
 			return c.json(
@@ -145,7 +148,7 @@ app.get(
 		}
 
 		const screenshot = await takeScreenshot({
-			url: url,
+			url,
 			fullPage: c.req.valid('query').fullPage === 'true',
 			quality: c.req.valid('query').quality,
 			type: c.req.valid('query').type,
@@ -154,6 +157,7 @@ app.get(
 				height: c.req.valid('query').height
 			}
 		})
+
 		return new Response(screenshot, {
 			headers: {
 				'Content-Type': `image/${c.req.valid('query').type}`
@@ -166,3 +170,5 @@ serve({
 	port: PORT,
 	fetch: app.fetch
 })
+
+console.log(`Screenshot service is online`)

@@ -167,7 +167,12 @@ This will start the service with the configuration specified in your `.env` file
 
 ### Accessing Local Services from Docker
 
-When running the screenshot service in Docker and you need to capture screenshots of services running on your local machine, use `host.docker.internal` instead of `localhost` in your URLs. This is because `localhost` inside the container refers to the container itself, not your host machine.
+When running the screenshot service in Docker and you need to capture screenshots of services running on your local machine, you need to:
+
+1. Add the `--add-host=host.docker.internal:host-gateway` flag when running the container
+2. Use `host.docker.internal` instead of `localhost` in your URLs
+
+This is because `localhost` inside the container refers to the container itself, not your host machine.
 
 Example:
 ```bash
@@ -177,6 +182,8 @@ curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?ur
 # ✅ Use:
 curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://host.docker.internal:3001/my-app"
 ```
+
+Note: The `--add-host` flag is required for `host.docker.internal` to work. Make sure to include it in your `docker run` command or `docker-compose.yml` file.
 
 ## Example Usage
 

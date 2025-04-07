@@ -27,7 +27,13 @@ async function getCluster() {
 			maxConcurrency: MAX_CONCURRENCY,
 			puppeteerOptions: {
 				headless: true,
-				args: ['--no-sandbox', '--disable-setuid-sandbox']
+				args: [
+					'--no-sandbox',
+					'--disable-setuid-sandbox',
+					'--font-render-hinting=none',
+					'--disable-font-subpixel-positioning',
+					'--force-color-profile=srgb'
+				]
 			} as PuppeteerOptions
 		})
 	}
@@ -57,12 +63,30 @@ async function takeScreenshot(opts: {
 }) {
 	const cluster = await getCluster()
 	return cluster.execute(null, async ({ page }) => {
+		await page.setUserAgent(
+			'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'
+		)
 		// Set authorization header for all requests
 		if (AUTH_TOKEN) {
 			await page.setExtraHTTPHeaders({
 				Authorization: `Bearer ${AUTH_TOKEN}`
 			})
 		}
+
+		// Set custom CSS to ensure consistent font rendering
+		// Hide scrollbar -- not desired for screenshot
+		await page.addStyleTag({
+			content: `
+				* {
+					-webkit-print-color-adjust: exact !important;
+					text-rendering: geometricprecision !important;
+					-webkit-font-smoothing: antialiased !important;
+					-webkit-box-sizing: border-box !important;
+					-moz-box-sizing: border-box !important;
+				}
+			`
+		})
+
 		await page.setViewport({
 			width: opts.dimensions.width,
 			height: opts.dimensions.height

@@ -81,8 +81,6 @@ async function takeScreenshot(opts: {
 					-webkit-print-color-adjust: exact !important;
 					text-rendering: geometricprecision !important;
 					-webkit-font-smoothing: antialiased !important;
-					-webkit-box-sizing: border-box !important;
-					-moz-box-sizing: border-box !important;
 				}
 			`
 		})

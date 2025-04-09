@@ -88,5 +88,8 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 # Expose the port the app runs on
 EXPOSE 3000
 
+# Set NODE_OPTIONS to increase memory limit
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 # Start the application directly with tsx
 CMD ["pnpm", "exec", "tsx", "src/server.ts"]

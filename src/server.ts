@@ -26,6 +26,7 @@ async function getCluster() {
 			concurrency: Cluster.CONCURRENCY_CONTEXT,
 			maxConcurrency: MAX_CONCURRENCY,
 			puppeteerOptions: {
+				timeout: 300_000, // 5 minutes -- give it very generous timeout since loading browsers all at once on resource-bound VM is slow
 				headless: true,
 				args: [
 					'--no-sandbox',

@@ -101,6 +101,27 @@ GET /screenshot
   - Default: 900
   - Range: 1-10000
 
+#### Page Loading Options
+
+The service provides several options to control when the screenshot is taken, ensuring content is fully loaded:
+
+- `waitUntil` (optional): When to consider page navigation successful
+  - Default: "networkidle2"
+  - Values:
+    - `"load"` - Wait for the `load` event (all resources loaded)
+    - `"domcontentloaded"` - Wait for the `DOMContentLoaded` event (DOM is ready, but stylesheets/images may still be loading)
+    - `"networkidle0"` - Wait until there are no network connections for at least 500ms (strictest)
+    - `"networkidle2"` - Wait until there are no more than 2 network connections for at least 500ms (default, good balance)
+- `waitForSelector` (optional): CSS selector to wait for before taking the screenshot
+  - Example: ".main-content" or "#hero-image"
+  - Timeout: 30 seconds
+  - Use this when you need to ensure a specific element has rendered
+- `delay` (optional): Additional delay in milliseconds after page load before taking the screenshot
+  - Range: 0-30000 (0-30 seconds)
+  - Use this for animations, transitions, or slow-rendering content
+
+**Note:** The service always waits for web fonts to load (`document.fonts.ready`) before taking screenshots to ensure text renders correctly.
+
 **Response:**
 - Content-Type: image/[type]
 - Body: Binary image data
@@ -205,4 +226,16 @@ curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?ur
 
 # Custom dimension WEBP screenshot
 curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&width=1024&height=768&type=webp" > screenshot.webp
+
+# Wait for all network activity to finish (strictest loading strategy)
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0" > screenshot.png
+
+# Wait for a specific element to appear before taking screenshot
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitForSelector=.main-content" > screenshot.png
+
+# Add a 2-second delay for animations/transitions to complete
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&delay=2000" > screenshot.png
+
+# Combine multiple loading options for complex pages
+curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0&waitForSelector=#hero-image&delay=1000" > screenshot.png
 ```

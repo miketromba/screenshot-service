@@ -61,6 +61,9 @@ async function takeScreenshot(opts: {
 	quality: number
 	type: 'png' | 'webp' | 'jpeg'
 	dimensions: { width: number; height: number }
+	waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2'
+	waitForSelector?: string
+	delay?: number
 }) {
 	const cluster = await getCluster()
 	return cluster.execute(null, async ({ page }) => {
@@ -91,8 +94,22 @@ async function takeScreenshot(opts: {
 			height: opts.dimensions.height
 		})
 		await page.goto(opts.url, {
-			waitUntil: 'networkidle2'
+			waitUntil: opts.waitUntil
 		})
+
+		// Wait for specific selector if provided
+		if (opts.waitForSelector) {
+			await page.waitForSelector(opts.waitForSelector, { timeout: 30000 })
+		}
+
+		// Wait for fonts to load
+		await page.evaluateHandle('document.fonts.ready')
+
+		// Additional delay if specified
+		if (opts.delay) {
+			await new Promise(resolve => setTimeout(resolve, opts.delay))
+		}
+
 		return page.screenshot({
 			type: opts.type,
 			...(opts.type !== 'png' ? { quality: opts.quality } : {}),
@@ -149,7 +166,18 @@ app.get(
 			quality: z.coerce.number().min(1).max(100).optional().default(100),
 			type: z.enum(['png', 'webp', 'jpeg']).optional().default('png'),
 			width: z.coerce.number().min(1).max(1920).optional().default(1440),
-			height: z.coerce.number().min(1).max(10000).optional().default(900)
+			height: z.coerce.number().min(1).max(10000).optional().default(900),
+			waitUntil: z
+				.enum([
+					'load',
+					'domcontentloaded',
+					'networkidle0',
+					'networkidle2'
+				])
+				.optional()
+				.default('networkidle2'),
+			waitForSelector: z.string().optional(),
+			delay: z.coerce.number().min(0).max(30000).optional()
 		})
 	),
 	async c => {
@@ -178,7 +206,10 @@ app.get(
 			dimensions: {
 				width: c.req.valid('query').width,
 				height: c.req.valid('query').height
-			}
+			},
+			waitUntil: c.req.valid('query').waitUntil,
+			waitForSelector: c.req.valid('query').waitForSelector,
+			delay: c.req.valid('query').delay
 		})
 
 		return new Response(screenshot, {

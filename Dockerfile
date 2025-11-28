@@ -1,5 +1,5 @@
-# Use Node.js 20 as the base image
-FROM node:20-slim
+# Use Bun's official image as the base
+FROM oven/bun:1-slim
 
 # Install required dependencies for Puppeteer and fonts
 RUN apt-get update \
@@ -66,17 +66,14 @@ RUN echo '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE fontconfig SYSTEM "fon
 # Update font cache
 RUN fc-cache -f -v
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.5.1 --activate
-
 # Create app directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json bun.lockb* ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -88,8 +85,5 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Set NODE_OPTIONS to increase memory limit
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-
-# Start the application directly with tsx
-CMD ["pnpm", "exec", "tsx", "src/server.ts"]
+# Start the application with Bun
+CMD ["bun", "run", "src/server.ts"]

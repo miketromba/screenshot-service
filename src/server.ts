@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serve } from '@hono/node-server'
 import { logger } from 'hono/logger'
 import { Cluster } from 'puppeteer-cluster'
 import puppeteer from 'puppeteer'
@@ -212,7 +211,7 @@ app.get(
 			delay: c.req.valid('query').delay
 		})
 
-		return new Response(screenshot, {
+		return new Response(Buffer.from(screenshot), {
 			headers: {
 				'Content-Type': `image/${c.req.valid('query').type}`
 			}
@@ -220,9 +219,9 @@ app.get(
 	}
 )
 
-serve({
+export default {
 	port: PORT,
 	fetch: app.fetch
-})
+}
 
-console.log(`Screenshot service is online`)
+console.log(`Screenshot service is online on port ${PORT}`)

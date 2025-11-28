@@ -1,14 +1,14 @@
 # Screenshot Service
 
-A high-performance Node.js service that generates web page screenshots on-demand using Puppeteer. Built with Hono and featuring concurrent processing, authentication, and hostname whitelisting for secure, scalable screenshot generation.
+A high-performance Bun service that generates web page screenshots on-demand using Puppeteer. Built with Hono and featuring concurrent processing, authentication, and hostname whitelisting for secure, scalable screenshot generation.
 
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
 ## Overview
 
-The Screenshot Service is a Node.js server built with Hono that provides an API for generating screenshots of web pages using Puppeteer. It supports concurrent screenshot generation through a puppeteer-cluster implementation.
+The Screenshot Service is a Bun server built with Hono that provides an API for generating screenshots of web pages using Puppeteer. It supports concurrent screenshot generation through a puppeteer-cluster implementation.
 
 ## Features
 
@@ -150,11 +150,11 @@ The service provides several options to control when the screenshot is taken, en
 
 ### Building the Image
 
-You can build the Docker image using either the npm script or directly with Docker:
+You can build the Docker image using either the bun script or directly with Docker:
 
 ```bash
-# Using npm script (builds with tag: screenshot-service)
-npm run docker:build
+# Using bun script (builds with tag: screenshot-service)
+bun run docker:build
 
 # Or directly with Docker
 docker build -t screenshot-service .

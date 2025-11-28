@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.*
+
+# IDE
+.idea
+.vscode
+
+# Build artifacts
+dist
+*.log
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Misc
+README.md
+*.md
+

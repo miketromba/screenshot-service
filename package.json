@@ -1,25 +1,23 @@
 {
     "name": "screenshot-service",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "private": true,
-    "packageManager": "pnpm@10.5.1",
     "scripts": {
-        "dev": "tsx watch --env-file=.env src/server.ts",
-        "start": "tsx --env-file=.env src/server.ts",
+        "dev": "bun --watch src/server.ts",
+        "start": "bun run src/server.ts",
         "docker:build": "docker build -t screenshot-service ."
     },
     "dependencies": {
-        "@hono/node-server": "^1.14.0",
         "@hono/zod-validator": "^0.4.3",
         "hono": "^4.7.4",
         "puppeteer": "^24.6.0",
         "puppeteer-cluster": "^0.24.0",
-        "tsx": "^4.19.3",
         "zod": "^3.24.2"
     },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "puppeteer"
-        ]
-    }
+    "devDependencies": {
+        "@types/bun": "latest"
+    },
+    "trustedDependencies": [
+        "puppeteer"
+    ]
 }

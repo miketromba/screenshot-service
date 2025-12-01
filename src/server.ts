@@ -219,9 +219,10 @@ app.get(
 	}
 )
 
-export default {
+Bun.serve({
 	port: PORT,
-	fetch: app.fetch
-}
+	fetch: app.fetch,
+	idleTimeout: 255 // max value, 5 mins
+})
 
 console.log(`Screenshot service is online on port ${PORT}`)

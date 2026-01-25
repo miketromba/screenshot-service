@@ -3,15 +3,23 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { Cluster } from 'puppeteer-cluster'
 import puppeteer from 'puppeteer'
-import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
+import {
+	screenshotQuerySchema,
+	isUrlHostnameAllowed,
+	queryToScreenshotOptions,
+	validateBearerToken,
+	captureScreenshot,
+	getHostWhitelist,
+	getAuthToken,
+	CHROME_ARGS
+} from './shared'
 
 const MAX_CONCURRENCY = process.env.MAX_CONCURRENCY
 	? parseInt(process.env.MAX_CONCURRENCY)
 	: 10
-const HOST_WHITELIST =
-	process.env.HOST_WHITELIST?.split(',').map(h => h.trim()) || []
-const AUTH_TOKEN = process.env.AUTH_TOKEN
+const HOST_WHITELIST = getHostWhitelist()
+const AUTH_TOKEN = getAuthToken()
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
 const DEV_MODE = process.env.NODE_ENV === 'development'
 
@@ -27,93 +35,17 @@ async function getCluster() {
 			puppeteerOptions: {
 				timeout: 300_000, // 5 minutes -- give it very generous timeout since loading browsers all at once on resource-bound VM is slow
 				headless: true,
-				args: [
-					'--no-sandbox',
-					'--disable-setuid-sandbox',
-					'--font-render-hinting=none',
-					'--disable-font-subpixel-positioning',
-					'--force-color-profile=srgb'
-				]
+				args: CHROME_ARGS
 			} as PuppeteerOptions
 		})
 	}
 	return cluster
 }
 
-function isUrlHostnameAllowed(url: string): boolean {
-	try {
-		const hostname = new URL(url).hostname
-		if (!HOST_WHITELIST.length) {
-			return true
-		}
-		return HOST_WHITELIST.some(
-			allowed => hostname === allowed || hostname.endsWith(`.${allowed}`)
-		)
-	} catch {
-		return false
-	}
-}
-
-async function takeScreenshot(opts: {
-	url: string
-	fullPage: boolean
-	quality: number
-	type: 'png' | 'webp' | 'jpeg'
-	dimensions: { width: number; height: number }
-	waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2'
-	waitForSelector?: string
-	delay?: number
-}) {
+async function takeScreenshot(opts: Parameters<typeof captureScreenshot>[1]) {
 	const cluster = await getCluster()
 	return cluster.execute(null, async ({ page }) => {
-		await page.setUserAgent(
-			'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36'
-		)
-		// Set authorization header for all requests
-		if (AUTH_TOKEN) {
-			await page.setExtraHTTPHeaders({
-				Authorization: `Bearer ${AUTH_TOKEN}`
-			})
-		}
-
-		// Set custom CSS to ensure consistent font rendering
-		// Hide scrollbar -- not desired for screenshot
-		await page.addStyleTag({
-			content: `
-				* {
-					-webkit-print-color-adjust: exact !important;
-					text-rendering: geometricprecision !important;
-					-webkit-font-smoothing: antialiased !important;
-				}
-			`
-		})
-
-		await page.setViewport({
-			width: opts.dimensions.width,
-			height: opts.dimensions.height
-		})
-		await page.goto(opts.url, {
-			waitUntil: opts.waitUntil
-		})
-
-		// Wait for specific selector if provided
-		if (opts.waitForSelector) {
-			await page.waitForSelector(opts.waitForSelector, { timeout: 30000 })
-		}
-
-		// Wait for fonts to load
-		await page.evaluateHandle('document.fonts.ready')
-
-		// Additional delay if specified
-		if (opts.delay) {
-			await new Promise(resolve => setTimeout(resolve, opts.delay))
-		}
-
-		return page.screenshot({
-			type: opts.type,
-			...(opts.type !== 'png' ? { quality: opts.quality } : {}),
-			fullPage: opts.fullPage
-		})
+		return captureScreenshot(page, opts, AUTH_TOKEN)
 	})
 }
 
@@ -133,16 +65,9 @@ const auth = async (c: any, next: any) => {
 	if (c.req.path === '/') {
 		return next()
 	}
-	const authHeader = c.req.header('Authorization')
-	if (!authHeader || !authHeader.startsWith('Bearer ')) {
-		return c.json(
-			{ error: 'Authorization header missing or invalid format' },
-			401
-		)
-	}
-	const token = authHeader.split(' ')[1]
-	if (token !== AUTH_TOKEN) {
-		return c.json({ error: 'Invalid token' }, 403)
+	const authResult = validateBearerToken(c.req.header('Authorization'), AUTH_TOKEN!)
+	if (authResult.valid === false) {
+		return c.json({ error: authResult.error }, authResult.status)
 	}
 	return next()
 }
@@ -157,36 +82,15 @@ app.get('/', c => {
 
 app.get(
 	'/screenshot',
-	zValidator(
-		'query',
-		z.object({
-			url: z.string().url(),
-			fullPage: z.enum(['true', 'false']).optional().default('false'),
-			quality: z.coerce.number().min(1).max(100).optional().default(100),
-			type: z.enum(['png', 'webp', 'jpeg']).optional().default('png'),
-			width: z.coerce.number().min(1).max(1920).optional().default(1440),
-			height: z.coerce.number().min(1).max(10000).optional().default(900),
-			waitUntil: z
-				.enum([
-					'load',
-					'domcontentloaded',
-					'networkidle0',
-					'networkidle2'
-				])
-				.optional()
-				.default('networkidle2'),
-			waitForSelector: z.string().optional(),
-			delay: z.coerce.number().min(0).max(30000).optional()
-		})
-	),
+	zValidator('query', screenshotQuerySchema),
 	async c => {
-		const { url } = c.req.valid('query')
+		const query = c.req.valid('query')
 
 		// Prod logging
-		if (!DEV_MODE) console.log('CAPTURE:', url)
+		if (!DEV_MODE) console.log('CAPTURE:', query.url)
 
 		// Check if the URL's hostname is allowed
-		if (!isUrlHostnameAllowed(url)) {
+		if (!isUrlHostnameAllowed(query.url, HOST_WHITELIST)) {
 			return c.json(
 				{
 					error: `Hostname not allowed. Must be one of: ${HOST_WHITELIST.join(
@@ -197,23 +101,11 @@ app.get(
 			)
 		}
 
-		const screenshot = await takeScreenshot({
-			url,
-			fullPage: c.req.valid('query').fullPage === 'true',
-			quality: c.req.valid('query').quality,
-			type: c.req.valid('query').type,
-			dimensions: {
-				width: c.req.valid('query').width,
-				height: c.req.valid('query').height
-			},
-			waitUntil: c.req.valid('query').waitUntil,
-			waitForSelector: c.req.valid('query').waitForSelector,
-			delay: c.req.valid('query').delay
-		})
+		const screenshot = await takeScreenshot(queryToScreenshotOptions(query))
 
 		return new Response(Buffer.from(screenshot), {
 			headers: {
-				'Content-Type': `image/${c.req.valid('query').type}`
+				'Content-Type': `image/${query.type}`
 			}
 		})
 	}

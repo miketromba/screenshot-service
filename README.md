@@ -1,14 +1,18 @@
 # Screenshot Service
 
-A high-performance Bun service that generates web page screenshots on-demand using Puppeteer. Built with Hono and featuring concurrent processing, authentication, and hostname whitelisting for secure, scalable screenshot generation.
+A high-performance screenshot service that generates web page screenshots on-demand using Puppeteer. Supports both Docker/Bun deployment with concurrent processing, and Vercel serverless deployment.
 
 [![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ## Overview
 
-The Screenshot Service is a Bun server built with Hono that provides an API for generating screenshots of web pages using Puppeteer. It supports concurrent screenshot generation through a puppeteer-cluster implementation.
+The Screenshot Service provides an API for generating screenshots of web pages using Puppeteer. It can be deployed in two ways:
+
+- **Docker/Bun**: Long-running server with puppeteer-cluster for concurrent processing (up to 10 simultaneous screenshots)
+- **Vercel**: Serverless function using puppeteer-core + @sparticuz/chromium (scales horizontally)
 
 ## Features
 
@@ -64,10 +68,15 @@ Note: When AUTH_TOKEN is set, it is also used to authenticate requests to the ta
 
 ## API Endpoints
 
+The API is identical for both deployment options, with different base paths:
+
+| Deployment | Health Check | Screenshot |
+|------------|--------------|------------|
+| Docker/Bun | `GET /` | `GET /screenshot` |
+| Vercel | `GET /api` | `GET /api/screenshot` |
+
 ### Health Check
-```
-GET /
-```
+
 Returns server status. This endpoint does not require authentication.
 
 **Response:**
@@ -76,9 +85,6 @@ Returns server status. This endpoint does not require authentication.
 ```
 
 ### Take Screenshot
-```
-GET /screenshot
-```
 
 **Authentication Required**: Yes (Bearer token)
 
@@ -141,10 +147,16 @@ The service provides several options to control when the screenshot is taken, en
 
 ## Technical Details
 
+### Docker/Bun
 - Built with [Hono](https://hono.dev/) web framework
 - Uses [Puppeteer](https://pptr.dev/) for browser automation
 - Implements [puppeteer-cluster](https://github.com/thomasdondorf/puppeteer-cluster) for concurrent processing
 - Input validation using [Zod](https://zod.dev/)
+
+### Vercel
+- Serverless function with [puppeteer-core](https://pptr.dev/)
+- Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) for serverless-optimized Chromium
+- Shared validation and screenshot logic with Docker deployment
 
 ## Docker Usage
 
@@ -211,6 +223,63 @@ curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?ur
 ```
 
 Note: The `--add-host` flag is required for `host.docker.internal` to work. Make sure to include it in your `docker run` command or `docker-compose.yml` file.
+
+## Vercel Deployment
+
+The service can also be deployed to Vercel as a serverless function.
+
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy (will prompt for project setup on first run)
+vercel
+
+# Deploy to production
+vercel --prod
+```
+
+### Configuration
+
+The `vercel.json` configures the screenshot function with a 60-second timeout:
+
+```json
+{
+  "functions": {
+    "api/screenshot.ts": {
+      "maxDuration": 60
+    }
+  }
+}
+```
+
+### Environment Variables
+
+Set environment variables in the Vercel dashboard or via CLI:
+
+```bash
+vercel env add AUTH_TOKEN
+vercel env add HOST_WHITELIST
+```
+
+### Limitations on Vercel
+
+- **Cold starts**: First request may take 5-10 seconds (browser launch)
+- **Timeout**: 60 seconds max (configurable up to 300s on Pro plan)
+- **No custom fonts**: Unlike Docker, Vercel functions don't include custom fonts (SF Pro, Noto Emoji). Screenshots may render with different fonts.
+- **Scaling**: Vercel handles scaling automatically via parallel function invocations (no puppeteer-cluster)
+
+### Vercel vs Docker
+
+| Feature | Docker/Bun | Vercel |
+|---------|------------|--------|
+| Concurrency | puppeteer-cluster (configurable) | Horizontal scaling |
+| Cold start | None (always running) | 5-10 seconds |
+| Custom fonts | Yes (SF Pro, Noto Emoji, etc.) | No |
+| Max timeout | Unlimited | 60-300 seconds |
+| Cost | Fixed (server) | Pay per invocation |
 
 ## Example Usage
 

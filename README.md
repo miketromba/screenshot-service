@@ -1,18 +1,69 @@
 # Screenshot Service
 
-A high-performance screenshot service that generates web page screenshots on-demand using Puppeteer. Supports both Docker/Bun deployment with concurrent processing, and Vercel serverless deployment.
+A high-performance screenshot service that generates web page screenshots on-demand using Puppeteer. Distributed via NPM for easy integration into your projects.
 
+[![npm](https://img.shields.io/npm/v/@miketromba/screenshot-service?style=flat)](https://www.npmjs.com/package/@miketromba/screenshot-service)
 [![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://vercel.com/)
+
+## Quick Start
+
+### Development (Local Server)
+
+Run the screenshot service locally with a single command (requires [Bun](https://bun.sh)):
+
+```bash
+# Start the server on port 3000
+npx @miketromba/screenshot-service
+
+# Or with options
+npx @miketromba/screenshot-service --port 3001
+
+# With authentication
+AUTH_TOKEN=secret npx @miketromba/screenshot-service
+```
+
+### Production (Vercel)
+
+Add the screenshot service to your existing Vercel/Next.js project:
+
+```bash
+npm install @miketromba/screenshot-service
+```
+
+**Next.js App Router** (`app/api/screenshot/route.ts`):
+```ts
+export { GET } from '@miketromba/screenshot-service/vercel'
+```
+
+**Vercel API Routes** (`api/screenshot.ts`):
+```ts
+export { GET } from '@miketromba/screenshot-service/vercel'
+```
+
+Add function configuration to your `vercel.json`:
+```json
+{
+  "functions": {
+    "api/screenshot.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
+}
+```
+
+Set environment variables in Vercel dashboard:
+- `AUTH_TOKEN` - Bearer token for authentication (optional)
+- `HOST_WHITELIST` - Comma-separated allowed hostnames (optional)
 
 ## Overview
 
-The Screenshot Service provides an API for generating screenshots of web pages using Puppeteer. It can be deployed in two ways:
+The Screenshot Service provides an API for generating screenshots of web pages using Puppeteer. It supports two deployment modes:
 
-- **Docker/Bun**: Long-running server with puppeteer-cluster for concurrent processing (up to 10 simultaneous screenshots)
-- **Vercel**: Serverless function using puppeteer-core + @sparticuz/chromium (scales horizontally)
+- **Development**: Local Bun server with puppeteer-cluster for concurrent processing (up to 10 simultaneous screenshots)
+- **Production**: Vercel serverless function using puppeteer-core + @sparticuz/chromium (scales horizontally)
 
 ## Features
 
@@ -147,18 +198,21 @@ The service provides several options to control when the screenshot is taken, en
 
 ## Technical Details
 
-### Docker/Bun
+### Local Development Server
 - Built with [Hono](https://hono.dev/) web framework
 - Uses [Puppeteer](https://pptr.dev/) for browser automation
 - Implements [puppeteer-cluster](https://github.com/thomasdondorf/puppeteer-cluster) for concurrent processing
 - Input validation using [Zod](https://zod.dev/)
+- Requires [Bun](https://bun.sh) runtime
 
-### Vercel
+### Vercel Serverless
 - Serverless function with [puppeteer-core](https://pptr.dev/)
 - Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) for serverless-optimized Chromium
-- Shared validation and screenshot logic with Docker deployment
+- Shared validation and screenshot logic
 
-## Docker Usage
+## Docker Usage (Alternative)
+
+For production deployments where you need full control, you can also run this as a Docker container.
 
 ### Building the Image
 
@@ -194,16 +248,6 @@ docker run -d \
   screenshot-service
 ```
 
-### Docker Compose
-
-For local development, you can use the provided `docker-compose.yml`:
-
-```bash
-docker-compose up -d
-```
-
-This will start the service with the configuration specified in your `.env` file.
-
 ### Accessing Local Services from Docker
 
 When running the screenshot service in Docker and you need to capture screenshots of services running on your local machine, you need to:
@@ -222,64 +266,26 @@ curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?ur
 curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://host.docker.internal:3001/my-app"
 ```
 
-Note: The `--add-host` flag is required for `host.docker.internal` to work. Make sure to include it in your `docker run` command or `docker-compose.yml` file.
+Note: The `--add-host` flag is required for `host.docker.internal` to work. Make sure to include it in your `docker run` command.
 
-## Vercel Deployment
+## Vercel Production Notes
 
-The service can also be deployed to Vercel as a serverless function.
-
-### Deploy to Vercel
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy (will prompt for project setup on first run)
-vercel
-
-# Deploy to production
-vercel --prod
-```
-
-### Configuration
-
-The `vercel.json` configures the screenshot function with a 60-second timeout:
-
-```json
-{
-  "functions": {
-    "api/screenshot.ts": {
-      "maxDuration": 60
-    }
-  }
-}
-```
-
-### Environment Variables
-
-Set environment variables in the Vercel dashboard or via CLI:
-
-```bash
-vercel env add AUTH_TOKEN
-vercel env add HOST_WHITELIST
-```
-
-### Limitations on Vercel
+### Limitations
 
 - **Cold starts**: First request may take 5-10 seconds (browser launch)
 - **Timeout**: 60 seconds max (configurable up to 300s on Pro plan)
-- **No custom fonts**: Unlike Docker, Vercel functions don't include custom fonts (SF Pro, Noto Emoji). Screenshots may render with different fonts.
-- **Scaling**: Vercel handles scaling automatically via parallel function invocations (no puppeteer-cluster)
+- **No custom fonts**: Unlike local development, Vercel functions don't include custom fonts. Screenshots may render with different fonts.
+- **Scaling**: Vercel handles scaling automatically via parallel function invocations
 
-### Vercel vs Docker
+### Local Dev vs Vercel
 
-| Feature | Docker/Bun | Vercel |
-|---------|------------|--------|
+| Feature | Local (npx) | Vercel |
+|---------|-------------|--------|
 | Concurrency | puppeteer-cluster (configurable) | Horizontal scaling |
 | Cold start | None (always running) | 5-10 seconds |
-| Custom fonts | Yes (SF Pro, Noto Emoji, etc.) | No |
+| Custom fonts | System fonts available | Limited |
 | Max timeout | Unlimited | 60-300 seconds |
-| Cost | Fixed (server) | Pay per invocation |
+| Cost | Free (local) | Pay per invocation |
 
 ## Example Usage
 

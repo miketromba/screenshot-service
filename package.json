@@ -3,7 +3,7 @@
     "version": "0.2.0",
     "type": "module",
     "bin": {
-        "screenshot-service": "./bin/cli.ts"
+        "screenshot-service": "bin/cli.ts"
     },
     "exports": {
         ".": {

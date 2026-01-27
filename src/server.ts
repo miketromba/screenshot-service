@@ -18,8 +18,8 @@ import {
 const MAX_CONCURRENCY = process.env.MAX_CONCURRENCY
 	? parseInt(process.env.MAX_CONCURRENCY)
 	: 10
-const HOST_WHITELIST = getHostWhitelist()
-const AUTH_TOKEN = getAuthToken()
+const SCREENSHOT_HOST_WHITELIST = getHostWhitelist()
+const SCREENSHOT_AUTH_TOKEN = getAuthToken()
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000
 const DEV_MODE = process.env.NODE_ENV === 'development'
 
@@ -45,7 +45,7 @@ async function getCluster() {
 async function takeScreenshot(opts: Parameters<typeof captureScreenshot>[1]) {
 	const cluster = await getCluster()
 	return cluster.execute(null, async ({ page }) => {
-		return captureScreenshot(page, opts, AUTH_TOKEN)
+		return captureScreenshot(page, opts, SCREENSHOT_AUTH_TOKEN)
 	})
 }
 
@@ -65,14 +65,17 @@ const auth = async (c: any, next: any) => {
 	if (c.req.path === '/') {
 		return next()
 	}
-	const authResult = validateBearerToken(c.req.header('Authorization'), AUTH_TOKEN!)
+	const authResult = validateBearerToken(
+		c.req.header('Authorization'),
+		SCREENSHOT_AUTH_TOKEN!
+	)
 	if (authResult.valid === false) {
 		return c.json({ error: authResult.error }, authResult.status)
 	}
 	return next()
 }
 
-if (AUTH_TOKEN) {
+if (SCREENSHOT_AUTH_TOKEN) {
 	app.use('*', auth)
 }
 
@@ -80,36 +83,32 @@ app.get('/', c => {
 	return c.json({ online: true })
 })
 
-app.get(
-	'/screenshot',
-	zValidator('query', screenshotQuerySchema),
-	async c => {
-		const query = c.req.valid('query')
+app.get('/screenshot', zValidator('query', screenshotQuerySchema), async c => {
+	const query = c.req.valid('query')
 
-		// Prod logging
-		if (!DEV_MODE) console.log('CAPTURE:', query.url)
+	// Prod logging
+	if (!DEV_MODE) console.log('CAPTURE:', query.url)
 
-		// Check if the URL's hostname is allowed
-		if (!isUrlHostnameAllowed(query.url, HOST_WHITELIST)) {
-			return c.json(
-				{
-					error: `Hostname not allowed. Must be one of: ${HOST_WHITELIST.join(
-						', '
-					)}`
-				},
-				403
-			)
-		}
-
-		const screenshot = await takeScreenshot(queryToScreenshotOptions(query))
-
-		return new Response(Buffer.from(screenshot), {
-			headers: {
-				'Content-Type': `image/${query.type}`
-			}
-		})
+	// Check if the URL's hostname is allowed
+	if (!isUrlHostnameAllowed(query.url, SCREENSHOT_HOST_WHITELIST)) {
+		return c.json(
+			{
+				error: `Hostname not allowed. Must be one of: ${SCREENSHOT_HOST_WHITELIST.join(
+					', '
+				)}`
+			},
+			403
+		)
 	}
-)
+
+	const screenshot = await takeScreenshot(queryToScreenshotOptions(query))
+
+	return new Response(Buffer.from(screenshot), {
+		headers: {
+			'Content-Type': `image/${query.type}`
+		}
+	})
+})
 
 Bun.serve({
 	port: PORT,

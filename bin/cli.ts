@@ -41,8 +41,8 @@ Options:
 
 Environment Variables:
   PORT            Server port (default: 3000)
-  AUTH_TOKEN      Bearer token for authentication (optional)
-  HOST_WHITELIST  Comma-separated list of allowed hostnames (optional)
+  SCREENSHOT_AUTH_TOKEN      Bearer token for authentication (optional)
+  SCREENSHOT_HOST_WHITELIST  Comma-separated list of allowed hostnames (optional)
   MAX_CONCURRENCY Maximum concurrent screenshots (default: 10)
   NODE_ENV        Set to "development" for verbose logging
 
@@ -54,7 +54,7 @@ Examples:
   npx @miketromba/screenshot-service --port 3001
 
   # Start with authentication
-  AUTH_TOKEN=secret npx @miketromba/screenshot-service
+  SCREENSHOT_AUTH_TOKEN=secret npx @miketromba/screenshot-service
 `)
 	process.exit(0)
 }

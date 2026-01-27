@@ -4,9 +4,9 @@ import type { Page as PuppeteerCorePage } from 'puppeteer-core'
 
 // Environment variables
 export const getHostWhitelist = () =>
-	process.env.HOST_WHITELIST?.split(',').map(h => h.trim()) || []
+	process.env.SCREENSHOT_HOST_WHITELIST?.split(',').map(h => h.trim()) || []
 
-export const getAuthToken = () => process.env.AUTH_TOKEN
+export const getAuthToken = () => process.env.SCREENSHOT_AUTH_TOKEN
 
 // Query parameter schema for screenshot endpoint
 export const screenshotQuerySchema = z.object({

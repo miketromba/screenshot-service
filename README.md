@@ -21,7 +21,7 @@ npx @miketromba/screenshot-service
 npx @miketromba/screenshot-service --port 3001
 
 # With authentication
-AUTH_TOKEN=secret npx @miketromba/screenshot-service
+SCREENSHOT_AUTH_TOKEN=secret npx @miketromba/screenshot-service
 ```
 
 ### Production (Vercel)
@@ -55,8 +55,8 @@ Add function configuration to your `vercel.json`:
 ```
 
 Set environment variables in Vercel dashboard:
-- `AUTH_TOKEN` - Bearer token for authentication (optional)
-- `HOST_WHITELIST` - Comma-separated allowed hostnames (optional)
+- `SCREENSHOT_AUTH_TOKEN` - Bearer token for authentication (optional)
+- `SCREENSHOT_HOST_WHITELIST` - Comma-separated allowed hostnames (optional)
 
 ## Overview
 
@@ -92,10 +92,10 @@ Example scenario:
 # These URLs require authentication to access
 
 # Configure the screenshot service with your auth token
-export AUTH_TOKEN=your-internal-auth-token
+export SCREENSHOT_AUTH_TOKEN=your-internal-auth-token
 
 # The service will now be able to access and capture these protected previews
-curl -H "Authorization: Bearer $AUTH_TOKEN" \
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" \
   "http://localhost:3000/screenshot?url=https://design-tool.internal/preview/design-123" \
   > design-preview.png
 ```
@@ -107,7 +107,7 @@ This setup ensures that:
 
 ## Authentication
 
-Authentication is optional and can be enabled by setting the `AUTH_TOKEN` environment variable. When enabled, all endpoints except the health check (`GET /`) require authentication using a Bearer token. The token must be included in the `Authorization` header of each request.
+Authentication is optional and can be enabled by setting the `SCREENSHOT_AUTH_TOKEN` environment variable. When enabled, all endpoints except the health check (`GET /`) require authentication using a Bearer token. The token must be included in the `Authorization` header of each request.
 
 Format: `Authorization: Bearer <your-token>`
 
@@ -115,7 +115,7 @@ If authentication is enabled and the token is missing or invalid, the server wil
 - `401 Unauthorized`: Missing or invalid Authorization header format
 - `403 Forbidden`: Invalid token
 
-Note: When AUTH_TOKEN is set, it is also used to authenticate requests to the target websites when taking screenshots. This means the service will forward your authentication token to the websites you're capturing.
+Note: When SCREENSHOT_AUTH_TOKEN is set, it is also used to authenticate requests to the target websites when taking screenshots. This means the service will forward your authentication token to the websites you're capturing.
 
 ## API Endpoints
 
@@ -190,11 +190,11 @@ The service provides several options to control when the screenshot is taken, en
 
 - `PORT`: Server port number (default: 3000)
 - `NODE_ENV`: Environment setting ("development" enables request logging)
-- `AUTH_TOKEN`: Optional. When set, used for two purposes:
+- `SCREENSHOT_AUTH_TOKEN`: Optional. When set, used for two purposes:
   1. The bearer token that clients must provide to access protected endpoints
   2. The authorization token forwarded to target websites when taking screenshots
 - `MAX_CONCURRENCY`: Maximum number of concurrent screenshot operations (default: 10)
-- `HOST_WHITELIST`: Comma-separated list of allowed hostnames. If empty, all hostnames are allowed
+- `SCREENSHOT_HOST_WHITELIST`: Comma-separated list of allowed hostnames. If empty, all hostnames are allowed
 
 ## Technical Details
 
@@ -231,8 +231,8 @@ docker build -t screenshot-service .
 ```bash
 docker run -d \
   -p 3000:3000 \
-  -e AUTH_TOKEN=your-secret-token \
-  -e HOST_WHITELIST=example.com,test.com \
+  -e SCREENSHOT_AUTH_TOKEN=your-secret-token \
+  -e SCREENSHOT_HOST_WHITELIST=example.com,test.com \
   -e MAX_CONCURRENCY=10 \
   screenshot-service
 ```
@@ -260,10 +260,10 @@ This is because `localhost` inside the container refers to the container itself,
 Example:
 ```bash
 # ❌ Instead of:
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://localhost:3001/my-app"
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://localhost:3001/my-app"
 
 # ✅ Use:
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://host.docker.internal:3001/my-app"
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3000/screenshot?url=http://host.docker.internal:3001/my-app"
 ```
 
 Note: The `--add-host` flag is required for `host.docker.internal` to work. Make sure to include it in your `docker run` command.
@@ -291,26 +291,26 @@ Note: The `--add-host` flag is required for `host.docker.internal` to work. Make
 
 ```bash
 # Set your auth token
-export AUTH_TOKEN=your-secret-token
+export SCREENSHOT_AUTH_TOKEN=your-secret-token
 
 # Basic screenshot
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com" > screenshot.png
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com" > screenshot.png
 
 # Full page JPEG screenshot with 80% quality
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&fullPage=true&type=jpeg&quality=80" > screenshot.jpg
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&fullPage=true&type=jpeg&quality=80" > screenshot.jpg
 
 # Custom dimension WEBP screenshot
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&width=1024&height=768&type=webp" > screenshot.webp
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&width=1024&height=768&type=webp" > screenshot.webp
 
 # Wait for all network activity to finish (strictest loading strategy)
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0" > screenshot.png
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0" > screenshot.png
 
 # Wait for a specific element to appear before taking screenshot
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitForSelector=.main-content" > screenshot.png
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitForSelector=.main-content" > screenshot.png
 
 # Add a 2-second delay for animations/transitions to complete
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&delay=2000" > screenshot.png
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&delay=2000" > screenshot.png
 
 # Combine multiple loading options for complex pages
-curl -H "Authorization: Bearer $AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0&waitForSelector=#hero-image&delay=1000" > screenshot.png
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0&waitForSelector=#hero-image&delay=1000" > screenshot.png
 ```

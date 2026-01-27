@@ -79,7 +79,7 @@ export async function GET(request: Request): Promise<Response> {
 	const authToken = getAuthToken()
 	const hostWhitelist = getHostWhitelist()
 
-	// Check authentication if AUTH_TOKEN is set
+	// Check authentication if SCREENSHOT_AUTH_TOKEN is set
 	if (authToken) {
 		const authResult = validateBearerToken(
 			request.headers.get('Authorization'),
@@ -119,7 +119,8 @@ export async function GET(request: Request): Promise<Response> {
 		return Response.json(
 			{
 				error: 'Failed to capture screenshot',
-				message: error instanceof Error ? error.message : 'Unknown error'
+				message:
+					error instanceof Error ? error.message : 'Unknown error'
 			},
 			{ status: 500 }
 		)

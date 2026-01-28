@@ -24,25 +24,39 @@ npx @miketromba/screenshot-service --port 3001
 SCREENSHOT_AUTH_TOKEN=secret npx @miketromba/screenshot-service
 ```
 
-### Production (Vercel)
+### Production (Vercel + Next.js)
 
-Add the screenshot service to your existing Vercel/Next.js project:
+Deploy the screenshot service as part of your Next.js project on Vercel.
+
+> **Note:** This package ships raw TypeScript files. You must configure Next.js to transpile it.
 
 ```bash
 npm install @miketromba/screenshot-service
 ```
 
-**Next.js App Router** (`app/api/screenshot/route.ts`):
+**Step 1: Configure Next.js to transpile the package** (`next.config.js` or `next.config.ts`):
+```js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  transpilePackages: ['@miketromba/screenshot-service'],
+}
+
+module.exports = nextConfig
+```
+
+**Step 2: Create the API route**
+
+Next.js App Router (`app/api/screenshot/route.ts`):
 ```ts
 export { GET } from '@miketromba/screenshot-service/vercel'
 ```
 
-**Vercel API Routes** (`api/screenshot.ts`):
+Or for Pages Router (`pages/api/screenshot.ts`):
 ```ts
 export { GET } from '@miketromba/screenshot-service/vercel'
 ```
 
-Add function configuration to your `vercel.json`:
+**Step 3: Add function configuration** (`vercel.json`):
 ```json
 {
   "functions": {
@@ -205,7 +219,8 @@ The service provides several options to control when the screenshot is taken, en
 - Input validation using [Zod](https://zod.dev/)
 - Requires [Bun](https://bun.sh) runtime
 
-### Vercel Serverless
+### Vercel Serverless (Next.js)
+- Requires Next.js with `transpilePackages` configured (ships raw TypeScript)
 - Serverless function with [puppeteer-core](https://pptr.dev/)
 - Uses [@sparticuz/chromium](https://github.com/Sparticuz/chromium) for serverless-optimized Chromium
 - Shared validation and screenshot logic
@@ -277,15 +292,16 @@ Note: The `--add-host` flag is required for `host.docker.internal` to work. Make
 - **No custom fonts**: Unlike local development, Vercel functions don't include custom fonts. Screenshots may render with different fonts.
 - **Scaling**: Vercel handles scaling automatically via parallel function invocations
 
-### Local Dev vs Vercel
+### Local Dev vs Vercel + Next.js
 
-| Feature | Local (npx) | Vercel |
-|---------|-------------|--------|
+| Feature | Local (npx) | Vercel + Next.js |
+|---------|-------------|------------------|
 | Concurrency | puppeteer-cluster (configurable) | Horizontal scaling |
 | Cold start | None (always running) | 5-10 seconds |
 | Custom fonts | System fonts available | Limited |
 | Max timeout | Unlimited | 60-300 seconds |
 | Cost | Free (local) | Pay per invocation |
+| Setup | None | Requires `transpilePackages` config |
 
 ## Example Usage
 

@@ -285,6 +285,18 @@ Note: The `--add-host` flag is required for `host.docker.internal` to work. Make
 
 ## Vercel Production Notes
 
+### Package Manager Compatibility
+
+> **Important:** This package may not work correctly with **PNPM** when deployed to Vercel.
+
+PNPM uses symlinks for its node_modules structure, which can cause issues with Vercel's build process and module resolution in production. If you encounter module resolution errors or unexpected behavior when deploying to Vercel with PNPM, switch your project to use **Bun** or **npm** as the package manager instead.
+
+```bash
+# If using PNPM and experiencing issues, switch to Bun:
+rm -rf node_modules pnpm-lock.yaml
+bun install
+```
+
 ### Limitations
 
 - **Cold starts**: First request may take 5-10 seconds (browser launch)

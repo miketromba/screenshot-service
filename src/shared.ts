@@ -21,7 +21,8 @@ export const screenshotQuerySchema = z.object({
 		.optional()
 		.default('networkidle2'),
 	waitForSelector: z.string().optional(),
-	delay: z.coerce.number().min(0).max(30000).optional()
+	delay: z.coerce.number().min(0).max(30000).optional(),
+	colorScheme: z.enum(['light', 'dark']).optional()
 })
 
 export type ScreenshotQuery = z.infer<typeof screenshotQuerySchema>
@@ -36,6 +37,7 @@ export type ScreenshotOptions = {
 	waitUntil: 'load' | 'domcontentloaded' | 'networkidle0' | 'networkidle2'
 	waitForSelector?: string
 	delay?: number
+	colorScheme?: 'light' | 'dark'
 }
 
 // Check if URL hostname is in the whitelist
@@ -71,7 +73,8 @@ export function queryToScreenshotOptions(
 		},
 		waitUntil: query.waitUntil,
 		waitForSelector: query.waitForSelector,
-		delay: query.delay
+		delay: query.delay,
+		colorScheme: query.colorScheme
 	}
 }
 
@@ -125,6 +128,13 @@ export async function captureScreenshot(
 		width: opts.dimensions.width,
 		height: opts.dimensions.height
 	})
+
+	// Emulate color scheme so sites render in light or dark mode accordingly
+	if (opts.colorScheme) {
+		await p.emulateMediaFeatures([
+			{ name: 'prefers-color-scheme', value: opts.colorScheme }
+		])
+	}
 
 	await p.goto(opts.url, {
 		waitUntil: opts.waitUntil

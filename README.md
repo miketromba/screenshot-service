@@ -86,6 +86,7 @@ The Screenshot Service provides an API for generating screenshots of web pages u
 - Support for multiple image formats (PNG, WEBP, JPEG)
 - Adjustable image quality
 - Full page or viewport screenshots
+- Light/dark mode rendering via `colorScheme` parameter
 - Concurrent request handling (up to 10 simultaneous screenshots)
 - Bearer token authentication for secure access
 - Hostname whitelist validation for enhanced security
@@ -171,6 +172,9 @@ Returns server status. This endpoint does not require authentication.
 - `height` (optional): Viewport height in pixels
   - Default: 900
   - Range: 1-10000
+- `colorScheme` (optional): Emulate light or dark mode for sites that support `prefers-color-scheme`
+  - Values: "light", "dark"
+  - When omitted, the browser's default (light) is used
 
 #### Page Loading Options
 
@@ -341,4 +345,10 @@ curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/sc
 
 # Combine multiple loading options for complex pages
 curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&waitUntil=networkidle0&waitForSelector=#hero-image&delay=1000" > screenshot.png
+
+# Capture a website in dark mode
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&colorScheme=dark" > screenshot-dark.png
+
+# Capture a website in light mode
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&colorScheme=light" > screenshot-light.png
 ```

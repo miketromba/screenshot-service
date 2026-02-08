@@ -1,6 +1,10 @@
-# Screenshot Service
+<p align="center">
+  <img src="assets/banner.png" alt="Screenshot Service" width="100%" />
+</p>
 
-A high-performance screenshot service that generates web page screenshots on-demand using Puppeteer. Distributed via NPM for easy integration into your projects.
+<p align="center">
+  A high-performance screenshot service that generates web page screenshots on-demand using Puppeteer. Distributed via NPM for easy integration into your projects.
+</p>
 
 [![npm](https://img.shields.io/npm/v/@miketromba/screenshot-service?style=flat)](https://www.npmjs.com/package/@miketromba/screenshot-service)
 [![Bun](https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white)](https://bun.sh/)

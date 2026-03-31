@@ -22,7 +22,9 @@ export const screenshotQuerySchema = z.object({
 		.default('networkidle2'),
 	waitForSelector: z.string().optional(),
 	delay: z.coerce.number().min(0).max(30000).optional(),
-	colorScheme: z.enum(['light', 'dark']).optional()
+	colorScheme: z.enum(['light', 'dark']).optional(),
+	scrollPage: z.enum(['true', 'false']).optional().default('false'),
+	waitForImages: z.enum(['true', 'false']).optional().default('false')
 })
 
 export type ScreenshotQuery = z.infer<typeof screenshotQuerySchema>
@@ -38,6 +40,8 @@ export type ScreenshotOptions = {
 	waitForSelector?: string
 	delay?: number
 	colorScheme?: 'light' | 'dark'
+	scrollPage: boolean
+	waitForImages: boolean
 }
 
 // Check if URL hostname is in the whitelist
@@ -74,7 +78,9 @@ export function queryToScreenshotOptions(
 		waitUntil: query.waitUntil,
 		waitForSelector: query.waitForSelector,
 		delay: query.delay,
-		colorScheme: query.colorScheme
+		colorScheme: query.colorScheme,
+		scrollPage: query.scrollPage === 'true',
+		waitForImages: query.waitForImages === 'true'
 	}
 }
 
@@ -144,6 +150,86 @@ export async function captureScreenshot(
 	await p.addStyleTag({
 		content: SCREENSHOT_CSS
 	})
+
+	if (opts.scrollPage || opts.waitForImages) {
+		const SCROLL_AND_WAIT_BUDGET_MS = 20_000
+
+		await Promise.race([
+			(async () => {
+				if (opts.scrollPage) {
+					await p.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' })
+					await p.evaluate(async () => {
+						const MAX_STEPS = 100
+						const MAX_MS = 15_000
+						const start = Date.now()
+						const elapsed = () => Date.now() - start
+
+						document.querySelectorAll('img[loading="lazy"]').forEach(i => {
+							i.removeAttribute('loading')
+						})
+						document.querySelectorAll('img[decoding="async"]').forEach(i => {
+							;(i as HTMLImageElement).decoding = 'sync'
+						})
+
+						const vh = window.innerHeight
+						let y = 0
+						let steps = 0
+
+						while (y < document.documentElement.scrollHeight && steps < MAX_STEPS && elapsed() < MAX_MS - 5_000) {
+							y += Math.floor(vh / 2)
+							window.scrollTo(0, y)
+							steps++
+							await new Promise(r => setTimeout(r, 150))
+						}
+
+						window.scrollTo(0, document.documentElement.scrollHeight)
+						await new Promise(r => setTimeout(r, 200))
+
+						const style = document.createElement('style')
+						style.textContent = '*, *::before, *::after { animation-play-state: paused !important; transition: none !important; }'
+						document.head.appendChild(style)
+						window.scrollTo(0, 0)
+						await new Promise(r => setTimeout(r, 200))
+					})
+				}
+
+				if (opts.waitForImages) {
+					await p.evaluate(async () => {
+						const MAX_MS = 10_000
+						const start = Date.now()
+						const elapsed = () => Date.now() - start
+
+						const imgs = Array.from(document.querySelectorAll('img'))
+						const pending = imgs.filter(i => !(i.complete && i.naturalWidth > 0))
+						if (pending.length) {
+							const perImageTimeout = Math.min(MAX_MS, Math.max(0, MAX_MS - elapsed()))
+							await Promise.all(
+								pending.map(
+									i =>
+										new Promise<void>(resolve => {
+											if (i.complete && i.naturalWidth > 0) return resolve()
+											let done = false
+											const finish = () => {
+												if (!done) {
+													done = true
+													resolve()
+												}
+											}
+											i.addEventListener('load', finish, { once: true })
+											i.addEventListener('error', finish, { once: true })
+											setTimeout(finish, perImageTimeout)
+										})
+								)
+							)
+						}
+
+						await new Promise(r => setTimeout(r, 500))
+					})
+				}
+			})(),
+			new Promise<void>(resolve => setTimeout(resolve, SCROLL_AND_WAIT_BUDGET_MS))
+		])
+	}
 
 	// Wait for specific selector if provided
 	if (opts.waitForSelector) {

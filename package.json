@@ -1,6 +1,10 @@
 {
     "name": "@miketromba/screenshot-service",
     "version": "0.4.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/miketromba/screenshot-service"
+    },
     "type": "module",
     "bin": {
         "screenshot-service": "bin/cli.ts"

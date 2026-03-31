@@ -91,6 +91,8 @@ The Screenshot Service provides an API for generating screenshots of web pages u
 - Adjustable image quality
 - Full page or viewport screenshots
 - Light/dark mode rendering via `colorScheme` parameter
+- Auto-scroll for lazy-loaded images and scroll-triggered animations
+- Wait for all images to finish loading before capture
 - Concurrent request handling (up to 10 simultaneous screenshots)
 - Bearer token authentication for secure access
 - Hostname whitelist validation for enhanced security
@@ -179,6 +181,12 @@ Returns server status. This endpoint does not require authentication.
 - `colorScheme` (optional): Emulate light or dark mode for sites that support `prefers-color-scheme`
   - Values: "light", "dark"
   - When omitted, the browser's default (light) is used
+- `scrollPage` (optional): Auto-scroll through the full page before capturing. Triggers lazy-loading images and IntersectionObserver-based animations (e.g. Framer Motion `whileInView`, AOS, CSS reveals).
+  - Default: "false"
+  - Values: "true" or "false"
+- `waitForImages` (optional): Wait for every `<img>` element to finish loading before taking the screenshot.
+  - Default: "false"
+  - Values: "true" or "false"
 
 #### Page Loading Options
 
@@ -355,4 +363,7 @@ curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/sc
 
 # Capture a website in light mode
 curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&colorScheme=light" > screenshot-light.png
+
+# Full-page capture with lazy image and animation support
+curl -H "Authorization: Bearer $SCREENSHOT_AUTH_TOKEN" "http://localhost:3006/screenshot?url=https://example.com&fullPage=true&scrollPage=true&waitForImages=true" > screenshot-full.png
 ```

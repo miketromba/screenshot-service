@@ -1,0 +1,27 @@
+# Every action this repo's workflows use is pinned to a checked commit in
+# .github/workflows/actions.lock. This fails if the lockfile is out of date
+# or a pin no longer verifies upstream (GitHub's gh-actions-lock).
+# After adding a workflow or changing a `uses:` line, run `gh actions-lock`.
+
+name: Verify actions lockfile
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4.4.0
+        with:
+          persist-credentials: false
+      - run: gh extension install github/gh-actions-lock --pin v0.4.1
+      - run: gh actions-lock --verify
